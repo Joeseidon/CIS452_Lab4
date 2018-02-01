@@ -14,6 +14,13 @@
 
 //SIGINT handler
 
+int file_count; //files "opened"
+double time_average;	//average execution time
+double total_time;
+int execution_time;		//shared memory: used by threads to calculate stop - start time
+
+int time_lock;	//mutex: prevent threads from overrighting execution_time
+
 void main(){
 
 	//estabilsh SIGINT handler 
