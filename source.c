@@ -7,37 +7,37 @@ communicating results to some controller-thread.
 @version  - Winter 2018
 
 Requirements:
-  - When terminated, your program should cleanup as appropriate and shutdown 
+  - When terminated, your program should cleanup as appropriate and shutdown
     gracefully.
   - The Dispatch-Thread should:
     - Input a string from a user (simulating the name of a file to access).
     - Spawn a worker thread and communicate to it the filename entered.
-    - Immediately repeat the input/spawn sequence (i.e. prepate to accept a new 
+    - Immediately repeat the input/spawn sequence (i.e. prepate to accept a new
       file request).
   - Each Worker-Thread should:
     - Obtain the simulated filename from the dispatcher.
     - Sleep for a certain amount of time, simulating the time spent performing a
       file access:
-      - With 80% probability, sleep for 1 second. This simulates the scenario 
-        that the Worker thread has found the desired file in the disk cache and 
+      - With 80% probability, sleep for 1 second. This simulates the scenario
+        that the Worker thread has found the desired file in the disk cache and
         serves it up quickly.
-      - With 20% probability, sleep for 7-10 seconds (randomly). This simulates 
-        the scenario that the worker thread has not found the requested file in 
+      - With 20% probability, sleep for 7-10 seconds (randomly). This simulates
+        the scenario that the worker thread has not found the requested file in
         the disk cache and must wait while it is read in from the hard drive.
-      - Wake up, print a diagnostic message that includes the name of the file 
+      - Wake up, print a diagnostic message that includes the name of the file
         accessed, terminate.
-  - In addition to being correct, your program should be efficient and should 
-    execute in parallel. Remember that threads share data -- as a rule, all 
-    multi-threaded programs should be carefully scrutinized for potential race 
+  - In addition to being correct, your program should be efficient and should
+    execute in parallel. Remember that threads share data -- as a rule, all
+    multi-threaded programs should be carefully scrutinized for potential race
     conditions or "data clobbering".
-    
+
 Extra-Credit:
   - Upon termination, report the average file access time.
-    - Recall the classroom discussion of concurrent access to a data object. To 
-      correctly accumulate the individual thread time values, you will need to 
-      ensure that the summation operation is exclusive (i.e. one at a time), so 
+    - Recall the classroom discussion of concurrent access to a data object. To
+      correctly accumulate the individual thread time values, you will need to
+      ensure that the summation operation is exclusive (i.e. one at a time), so
       that executing threads do not overwrite each other.
-    - Hint: this process is called "mutual exclusion" and the object needed to 
+    - Hint: this process is called "mutual exclusion" and the object needed to
       implement it is called a "mutex".
 *******************************************************************************/
 
@@ -47,18 +47,25 @@ Extra-Credit:
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 // SIGINT handler
 
 /* Global Variables Accessible to Threads... */
 
-int file_count;       // Files "opened".
-double time_average;  // Average execution time.
-double total_time;    // Total accumulated time by threads.
-int execution_time;   // Used by threads to calculate stop - start time
-int time_lock;	      //mutex: prevent threads from overrighting execution_time
+int worker_count = 0;     // Worker threads created.
+double time_average;      // Average execution time.
+double total_time = 0;    // Total accumulated time by threads.
+int time_lock;            // Mutex: prevent threads from overwriting total_time.
 
-void main(){
+/* Initializing signal-handler functions. */
+
+void closeSignalHandler(int);
+void signalOneHandler(int);
+void mainCloseSignalHandler(int);
+void *lookToFile(void*);
+
+int main() {
     // Assign Signal Handler
     signal (SIGUSR1, signalOneHandler);
 
@@ -69,37 +76,42 @@ void main(){
     int max_file_chars = 100;
     char filename[max_file_chars];
 
-	// This should loop (always accepting new files and making new threads).
-	while (true) {
-	    printf("Enter a filename:");
-	    signal (SIGINT, mainCloseSignalHandler);
-	    gets(filename);  // Waits for user input of filename OR "CTRL-C".
-	    printf("\n");	    
-	    
-	    pthread_t fileSearcherThread;  // Thread ID Holder.
-	    int status;                    // Captures any error code.
-	    
-	    // Create and start a thread executing the "lookToFile()" function.
-	    if ((status = pthread_create(&thread1, NULL, 
-	                                 do_greeting, filename)) != 0) {
-	        fprintf(stderr, "Thread Create Error %d: %s\n",
-		    status, strerror(status));
-	        exit(1);
-	    }
-	}
-	
-	// This should never be called.
-	return 0;
+    // This should loop (always accepting new files and making new threads).
+    while (1) {
+        sleep(0.5);
+        printf("Enter a filename: ");
+        signal (SIGINT, mainCloseSignalHandler);
+        // Waits for user input of filename OR "CTRL-C".
+        fgets(filename, max_file_chars, stdin);
+
+        pthread_t fileSearcherThread;  // Thread ID Holder.
+        int status;                    // Captures any error code.
+
+        // Create and start a thread executing the "lookToFile()" function.
+        if ((status = pthread_create(&fileSearcherThread, NULL, lookToFile, filename)) != 0) {
+            fprintf(stderr, "Thread Create Error %d: %s\n",
+            status, strerror(status));
+            exit(1);
+        }
+        else {
+            // Success in creating thread. Increment.
+            worker_count++;
+        }
+    }
 }
 
-//worker thread function here
+// Worker thread function here
 void *lookToFile(void *arg)
 {
+    // Initiate a filename string for this thread's stack.
+    char* newFilename;
+    newFilename = arg;
+
     // Detach the child thread to handle processor. Parent will not join().
     int didDetach;
-    didDetach = pthread_detach (pthread_self());
+    didDetach = pthread_detach(pthread_self());
     if (didDetach == 0) {
-        printf("  Thread Detached!\n");
+        printf("Thread Detached!\n");
     }
 
     // Sleep a semi-random amount of time.
@@ -112,14 +124,14 @@ void *lookToFile(void *arg)
     }
     signal (SIGINT, closeSignalHandler);     // Closes the process "mid-search".
     sleep(randTime);
-    
-    printf("  Found File: \"%s\"\n", (char)arg );
-    
+
+    printf("Found File: %s", newFilename);
+
     // Loop as thread waits in line to add the timer-value to total global time.
         // Add "randTime" to some "globalTime"
-    
+
     // Exit this thread without returning an argument. Parent is not waiting.
-    pthread_exit();
+    return arg;
 }
 
 // SIGNINT handler here
@@ -134,23 +146,26 @@ void signalOneHandler(int sigNum){
 
 // Worker-threads, smooth-exit on user's "CTRL-C"
 void closeSignalHandler (int sigNum) {
-    
-    printf ("Close-Signal received!\n");
-    pthread_exit();
+    printf ("\nClose-Signal received!\n");
+
+    // Kill the thread.
+    exit(1);
 }
 
 // Dispatch-thread, smooth-exit on user's "CTRL-C"
 void mainCloseSignalHandler (int sigNum) {
-    printf ("Main thread closing...\n");
-    
+    printf ("\nMain thread closing...\n");
+
+    printf ("Total Requests Serviced: %d\n", worker_count);
+
     // Print stats
       // Total number of file requests received/serviced
       // EXTRA CREDIT: report average file access time
-	  // HINT: use a mutex
+      // HINT: use a mutex
 
-	  // Perform cleanup and shutdown gracefully
-    
-    // Have the main thread close itself.
+    // Perform cleanup and shutdown gracefully
+
+    // Kill the program.
     exit(1);
 }
 
