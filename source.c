@@ -108,6 +108,7 @@ int main() {
 			worker_count++;
 			
         }
+		end:
     }
 	
 	int i =0;
@@ -200,6 +201,7 @@ void mainCloseSignalHandler (int sigNum) {
     // Kill the program.
     //exit(1);
 	main_running = 0; //This will cancel while loop in main, causing exit
+	goto end;
 	return;
 }
 
