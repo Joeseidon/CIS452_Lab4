@@ -97,7 +97,8 @@ int main() {
         printf("Enter a filename: ");
         
         // Waits for user input of filename OR "CTRL-C".
-        fgets(filename, MAX_FILE_CHARS, stdin);
+        //fgets(filename, MAX_FILE_CHARS, stdin);
+		fscanf(stdin, "%256[^\n]", filename);
 
         //pthread_t fileSearcherThread;  // Thread ID Holder.
         int status;                    // Captures any error code.
