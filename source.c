@@ -116,14 +116,6 @@ int main() {
         }
     }
 	
-	
-	/*int i =0;
-	for(i=0; i<worker_count; i++){
-		printf("Waiting for thread %d",i);
-		pthread_join(threads[i], NULL);
-	}		
-	
-	printf("Main Thread End!\n");*/
 	return 0;
 }
 
