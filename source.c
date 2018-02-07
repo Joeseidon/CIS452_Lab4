@@ -106,7 +106,7 @@ int main() {
         //fgets(filename, MAX_FILE_CHARS, stdin);
 		fscanf(stdin, "%256[^\n]", filename);
 		flush();
-		if(main_running == false)
+		if(!main_running)
 			break;
 
         //pthread_t fileSearcherThread;  // Thread ID Holder.
