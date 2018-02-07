@@ -177,7 +177,8 @@ void *lookToFile(void *arg)
 		}
 	}
 	
-	pthread_exit(0);
+	//pthread_exit(0);
+	return arg;
 }
 
 // Dispatch-thread, smooth-exit on user's "CTRL-C"
