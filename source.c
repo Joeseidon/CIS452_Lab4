@@ -169,13 +169,13 @@ void *lookToFile(void *arg)
 
     // Exit this thread without returning an argument. Parent is not waiting.
     //return arg;
-	int i;
+	/*int i;
 	for(i=0;i<MAX_THREADS;i++){
 		if(pthread_equal(pthread_self(),threads[i])){
 			thread_open[i]=0;
 			break;
 		}
-	}
+	}*/
 	
 	pthread_exit(0);
 }
@@ -191,32 +191,16 @@ void mainCloseSignalHandler (int sigNum) {
 	int error;
 	int i;
 	for(i=0; i<worker_count; i++){
-		if(thread_open[i]){
-			
+		//if(thread_open[i]){
 			error = pthread_cancel(threads[i]);
 			if(error != ESRCH){
 				printf("Closing Thread %d\n",i);
 			}
-		}
+		//}
 	}
 	
-	/*for(i=0; i<worker_count; i++){
-		printf("Waiting for thread %d",i);
-		pthread_join(threads[i], NULL);
-	}	*/	
-	
-	printf("Main Thread End!\n");
-	
     printf ("\nMain thread closing...\n");
-
-    // Print stats
-      // Total number of file requests received/serviced
-      // EXTRA CREDIT: report average file access time
-      // HINT: use a mutex
-
-    // Perform cleanup and shutdown gracefully
-
-    
+	
 	main_running = 0; //This will cancel while loop in main, causing exit
 	
 	exit(0);
