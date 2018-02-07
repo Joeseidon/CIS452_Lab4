@@ -176,7 +176,7 @@ void *lookToFile(void *arg)
 // Dispatch-thread, smooth-exit on user's "CTRL-C"
 void mainCloseSignalHandler (int sigNum) {
 	
-	printf ("\nTotal Requests Serviced: %d\n", worker_count);
+	printf ("\nTotal Requests Serviced: %d\n", time_additions);
 	printf ("Total Access Time: %f\n", total_time);
 	printf ("Average Access Time: %f\n", time_average);
 	
