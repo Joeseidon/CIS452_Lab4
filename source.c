@@ -188,13 +188,18 @@ void mainCloseSignalHandler (int sigNum) {
 	printf ("Average Access Time: %f\n", time_average);
 	
     printf ("Closing Active Child Threads...\n");
+	int error;
+	int i;
 	for(i=0; i<worker_count; i++){
 		if(thread_open[i]){
-			printf("Closing Thread %d\n",i);
-			pthread_cancel(threads[i]);
+			
+			error = pthread_cancel(threads[i]);
+			if(error != ESRCH){
+				printf("Closing Thread %d\n",i);
+			}
 		}
 	}
-	int i;
+	
 	/*for(i=0; i<worker_count; i++){
 		printf("Waiting for thread %d",i);
 		pthread_join(threads[i], NULL);
