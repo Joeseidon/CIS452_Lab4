@@ -107,7 +107,7 @@ int main() {
         //fgets(filename, MAX_FILE_CHARS, stdin);
 		scanf("%256[^\n]", filename);
 		flush();
-		if(!running){
+		if(!main_running){
 			break;
 		}
 
