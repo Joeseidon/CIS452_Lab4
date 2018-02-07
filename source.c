@@ -209,7 +209,7 @@ void mainCloseSignalHandler (int sigNum) {
 	main_running = 0; //This will cancel while loop in main, causing exit
 	
 	//exit(0); //required to exit blocking user input command 
-	raise(SIGQUIT);
+	raise(SIGSTOP);
 	
 	return;
 }
