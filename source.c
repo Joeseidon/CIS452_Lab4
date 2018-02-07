@@ -84,6 +84,12 @@ int main() {
     // Initiate a filename string.
     //int max_file_chars = 100;
     char filename[MAX_FILE_CHARS];
+	
+	pthread_attr_t attr;
+	// set thread detachstate attribute to DETACHED 
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
 
     // This should loop (always accepting new files and making new threads).
     while (main_running) {
@@ -97,7 +103,7 @@ int main() {
         int status;                    // Captures any error code.
 
         // Create and start a thread executing the "lookToFile()" function.
-        if ((status = pthread_create(&threads[worker_count], NULL, lookToFile, filename)) != 0) {
+        if ((status = pthread_create(&threads[worker_count], &attr, lookToFile, filename)) != 0) {
             fprintf(stderr, "Thread Create Error %d: %s\n",
             status, strerror(status));
             exit(1);
@@ -171,7 +177,7 @@ void *lookToFile(void *arg)
 		}
 	}
 	
-	//pthread_exit(0);
+	pthread_exit(0);
 }
 
 // Dispatch-thread, smooth-exit on user's "CTRL-C"
@@ -182,20 +188,20 @@ void mainCloseSignalHandler (int sigNum) {
 	printf ("Average Access Time: %f\n", time_average);
 	
     printf ("Closing Active Child Threads...\n");
-
-	int i;
 	for(i=0; i<worker_count; i++){
-		printf("Waiting for thread %d",i);
-		pthread_join(threads[i], NULL);
-	}		
-	
-	printf("Main Thread End!\n");
-	/*for(i=0; i<worker_count; i++){
 		if(thread_open[i]){
 			printf("Closing Thread %d\n",i);
 			pthread_cancel(threads[i]);
 		}
-	}*/
+	}
+	int i;
+	/*for(i=0; i<worker_count; i++){
+		printf("Waiting for thread %d",i);
+		pthread_join(threads[i], NULL);
+	}	*/	
+	
+	printf("Main Thread End!\n");
+	
     printf ("\nMain thread closing...\n");
 
     // Print stats
@@ -207,9 +213,9 @@ void mainCloseSignalHandler (int sigNum) {
 
     
 	main_running = 0; //This will cancel while loop in main, causing exit
-
-	// Kill the program.
-    exit(1);
+	
+	exit(0);
+	
 	return;
 }
 
