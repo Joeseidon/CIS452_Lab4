@@ -110,15 +110,14 @@ int main() {
         }
     }
 	
-	END:
 	
-	int i =0;
+	/*int i =0;
 	for(i=0; i<worker_count; i++){
 		printf("Waiting for thread %d",i);
 		pthread_join(threads[i], NULL);
 	}		
 	
-	printf("Main Thread End!\n");
+	printf("Main Thread End!\n");*/
 	return 0;
 }
 
@@ -186,11 +185,17 @@ void mainCloseSignalHandler (int sigNum) {
 
 	int i;
 	for(i=0; i<worker_count; i++){
+		printf("Waiting for thread %d",i);
+		pthread_join(threads[i], NULL);
+	}		
+	
+	printf("Main Thread End!\n");
+	/*for(i=0; i<worker_count; i++){
 		if(thread_open[i]){
 			printf("Closing Thread %d\n",i);
 			pthread_cancel(threads[i]);
 		}
-	}
+	}*/
     printf ("\nMain thread closing...\n");
 
     // Print stats
@@ -200,12 +205,11 @@ void mainCloseSignalHandler (int sigNum) {
 
     // Perform cleanup and shutdown gracefully
 
-    // Kill the program.
-    //exit(1);
+    
 	main_running = 0; //This will cancel while loop in main, causing exit
-	fflush(stdin);
-	fflush(stdout);
-	goto END;
+
+	// Kill the program.
+    exit(1);
 	return;
 }
 
