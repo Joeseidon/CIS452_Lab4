@@ -71,6 +71,12 @@ void closeSignalHandler(int);
 void signalOneHandler(int);
 void mainCloseSignalHandler(int);
 void *lookToFile(void*);
+void flush(void)
+{
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+}
 
 int main() {
     // Assign Signal Handler
@@ -99,6 +105,7 @@ int main() {
         // Waits for user input of filename OR "CTRL-C".
         //fgets(filename, MAX_FILE_CHARS, stdin);
 		fscanf(stdin, "%256[^\n]", filename);
+		flush();
 
         //pthread_t fileSearcherThread;  // Thread ID Holder.
         int status;                    // Captures any error code.
