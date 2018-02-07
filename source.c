@@ -108,7 +108,6 @@ int main() {
 			worker_count++;
 			
         }
-		end:
     }
 	
 	int i =0;
