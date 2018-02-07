@@ -49,19 +49,19 @@ Extra-Credit:
 #include <string.h>
 #include <signal.h>
 
-
 #define MAX_THREADS 10
 #define MAX_FILE_CHARS 256
-
-// SIGINT handler
 
 /* Global Variables Accessible to Threads... */
 
 int worker_count = 0;     // Worker threads created.
-double time_average=0.0;      // Average execution time.
-double total_time = 0.0;    // Total accumulated time by threads.
-int time_additions = 0;
-int time_lock = 0;            // Mutex: prevent threads from overwriting total_time.
+double time_average=0.0;  // Average execution time.
+double total_time = 0.0;  // Total accumulated time by threads.
+int time_additions = 0;   // Number of "times" counted.
+int time_lock = 0;        // Mutex: prevent threads from overwriting total_time.
+
+/* Thread handling. */
+
 pthread_t threads[MAX_THREADS];
 int thread_open[] = {0,0,0,0,0,0,0,0,0,0};
 int main_running = 1;
@@ -72,79 +72,62 @@ void closeSignalHandler(int);
 void signalOneHandler(int);
 void mainCloseSignalHandler(int);
 void *lookToFile(void*);
-void flush(void)
-{
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF)
-        ;
-}
 
 int main() {
     // Assign Signal Handler
-    //signal (SIGUSR1, signalOneHandler);
-	signal (SIGINT, mainCloseSignalHandler);
-	
+    signal (SIGINT, mainCloseSignalHandler);
 
     // Seed the random function for all future threads.
     srand(time(NULL));
 
     // Initiate a filename string.
-    //int max_file_chars = 100;
     char filename[MAX_FILE_CHARS];
-	
-	pthread_attr_t attr;
-	// set thread detachstate attribute to DETACHED 
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
+    // Create an attribute for detaching threads.
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     // This should loop (always accepting new files and making new threads).
     while (main_running) {
         sleep(0.5);
         printf("Enter a filename: ");
-        
-        // Waits for user input of filename OR "CTRL-C".
-        fgets(filename, MAX_FILE_CHARS, stdin);
-		/*scanf("%256[^\n]", filename);
-		flush();
-		if(!main_running){
-			break;
-		}*/
 
-        //pthread_t fileSearcherThread;  // Thread ID Holder.
-        int status;                    // Captures any error code.
+        // Waits for user input of filename OR "CTRL-C".
+        // The CTRL-C handler raises an error to break fgets().
+        fgets(filename, MAX_FILE_CHARS, stdin);
+
+        // The CTRL-C handler changes this variable.
+        if(!main_running){
+            break;
+        }
+
+        // Captures any error code.
+        int status;
 
         // Create and start a thread executing the "lookToFile()" function.
-        if ((status = pthread_create(&threads[worker_count], &attr, lookToFile, filename)) != 0) {
+        if ((status = pthread_create(&threads[worker_count], &attr,
+                lookToFile, filename)) != 0) {
+            // Error in creating thread. Stop program.
             fprintf(stderr, "Thread Create Error %d: %s\n",
             status, strerror(status));
             exit(1);
-        }
-        else {
+        } else {
             // Success in creating thread. Increment.
             thread_open[worker_count]=1;
-			worker_count++;
-			
+            worker_count++;
         }
     }
-	
-	return 0;
+
+    return 0;
 }
 
-// Worker thread function here
+// Worker-Thread Function.
 void *lookToFile(void *arg)
 {
     // Initiate a filename string for this thread's stack.
     char newFilename[MAX_FILE_CHARS];
-    //newFilename = arg;
-	strcpy(newFilename,(char*)arg);
-
-    // Detach the child thread to handle processor. Parent will not join().
-    /*int didDetach;
-    didDetach = pthread_detach(pthread_self());
-    if (didDetach != 0) {
-        printf("Thread Did Not Detach\n");
-    }*/
+    strcpy(newFilename,(char*)arg);
 
     // Sleep a semi-random amount of time.
     int probabilityRand = (rand() % 10) + 1; // Generate random number 1-10.
@@ -154,64 +137,61 @@ void *lookToFile(void *arg)
     } else {
         randTime = 1;                        // Gen. "random number" of 1.
     }
-    //signal (SIGINT, closeSignalHandler);     // Closes the process "mid-search".
     sleep(randTime);
 
     printf("\nFound File: %s", newFilename);
 
-    // Loop as thread waits in line to add the timer-value to total global time.
-        // Add "randTime" to some "globalTime"
-		
-	while(time_lock)
-		/*Wait until this thread has access to time data*/;
-	time_lock = 1; //lock to prevent modification by other threads
-	total_time += randTime;
-	time_additions++;
-	time_average = (total_time/(time_additions*1.0));
-	time_lock = 0; //unlock for other threads to use
-	
+    // Thread adding it's time-used to the global time.
+    while(time_lock)         // Wait until this thread has access to time data.
+        ;
+    time_lock = 1;           // Lock to prevent modification by other threads.
+    total_time += randTime;
+    time_additions++;
+    time_average = (total_time/(time_additions*1.0));
+    time_lock = 0;           // Unlock for other threads to use.
 
-    // Exit this thread without returning an argument. Parent is not waiting.
-    //return arg;
-	int i;
-	for(i=0;i<MAX_THREADS;i++){
-		if(pthread_equal(pthread_self(),threads[i])){
-			thread_open[i]=0;
-			break;
-		}
-	}
-	
-	//pthread_exit(0);
-	return arg;
+    // Exit this thread. Parent is not waiting.
+    int i;
+    for(i=0;i<MAX_THREADS;i++){
+        if(pthread_equal(pthread_self(),threads[i])){
+            thread_open[i]=0;
+            break;
+        }
+    }
+
+    return arg;
 }
 
-// Dispatch-thread, smooth-exit on user's "CTRL-C"
+// Dispatch-Thread use, instrumental in smooth-exit on user's "CTRL-C".
 void mainCloseSignalHandler (int sigNum) {
-	
-	printf ("\nTotal Requests Serviced: %d\n", time_additions);
-	printf ("Total Access Time: %f\n", total_time);
-	printf ("Average Access Time: %f\n", time_average);
-	
+
+    // Displaying statistics.
+    printf ("\n\nTotal Requests Serviced: %d\n", time_additions);
+    printf ("Total Access Time: %.2fsecs\n", total_time);
+    printf ("Average Access Time: %.2fsecs\n", time_average);
+
+    // Closing of the active threads.
     printf ("Closing Active Child Threads...\n");
-	int error;
-	int i;
-	for(i=0; i<worker_count; i++){
-		if(thread_open[i]){
-			error = pthread_cancel(threads[i]);
-			if(error != ESRCH){
-				printf("Closing Thread %d\n",i);
-			}
-		}
-	}
-	
-    printf ("\nMain thread closing...\n");
-	
-	main_running = 0; //This will cancel while loop in main, causing exit
-	
-	//exit(0); //required to exit blocking user input command 
-	raise(SIGSTOP);
-	
-	return;
+    int error;
+    int i;
+    for(i=0; i<worker_count; i++){
+        if(thread_open[i]){
+            error = pthread_cancel(threads[i]);
+            if(error != ESRCH){
+                printf("Closing Thread %d\n",i);
+            }
+        }
+    }
+
+    printf ("Main thread closing...\n");
+
+    //This will end the while loop in main.
+    main_running = 0;
+
+    // Throws an error at the fgets() in main.
+    raise(SIGSTOP);
+
+    return;
 }
 
 
