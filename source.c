@@ -110,6 +110,13 @@ int main() {
         }
     }
 	
+	int i =0;
+	void **rtn;
+	for(i=0; i<worker_count; i++){
+		pthread_join(threads[i], rtn);
+	}		
+	
+	printf("Main Thread End!\n");
 	return 0;
 }
 
@@ -122,10 +129,10 @@ void *lookToFile(void *arg)
 	strcpy(newFilename,(char*)arg);
 
     // Detach the child thread to handle processor. Parent will not join().
-    int didDetach;
+    /*int didDetach;
     didDetach = pthread_detach(pthread_self());
-    /*if (didDetach == 0) {
-        printf("Thread Detached!\n");
+    if (didDetach != 0) {
+        printf("Thread Did Not Detach\n");
     }*/
 
     // Sleep a semi-random amount of time.
@@ -163,7 +170,7 @@ void *lookToFile(void *arg)
 		}
 	}
 	
-	pthread_exit(arg);
+	//pthread_exit(0);
 }
 
 // Dispatch-thread, smooth-exit on user's "CTRL-C"
