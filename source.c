@@ -49,6 +49,7 @@ Extra-Credit:
 #include <string.h>
 #include <signal.h>
 
+
 #define MAX_THREADS 10
 #define MAX_FILE_CHARS 256
 
@@ -106,6 +107,9 @@ int main() {
         //fgets(filename, MAX_FILE_CHARS, stdin);
 		scanf("%256[^\n]", filename);
 		flush();
+		if(!running){
+			break;
+		}
 
         //pthread_t fileSearcherThread;  // Thread ID Holder.
         int status;                    // Captures any error code.
@@ -205,6 +209,7 @@ void mainCloseSignalHandler (int sigNum) {
 	main_running = 0; //This will cancel while loop in main, causing exit
 	
 	//exit(0); //required to exit blocking user input command 
+	raise(SIGSTOP);
 	
 	return;
 }
