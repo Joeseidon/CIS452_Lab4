@@ -111,9 +111,8 @@ int main() {
     }
 	
 	int i =0;
-	void **rtn;
 	for(i=0; i<worker_count; i++){
-		pthread_join(threads[i], rtn);
+		pthread_join(threads[i], NULL);
 	}		
 	
 	printf("Main Thread End!\n");
