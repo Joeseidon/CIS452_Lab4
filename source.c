@@ -110,6 +110,7 @@ int main() {
         }
     }
 	
+	END:
 	
 	int i =0;
 	for(i=0; i<worker_count; i++){
@@ -204,6 +205,7 @@ void mainCloseSignalHandler (int sigNum) {
 	main_running = 0; //This will cancel while loop in main, causing exit
 	fflush(stdin);
 	fflush(stdout);
+	goto END;
 	return;
 }
 
